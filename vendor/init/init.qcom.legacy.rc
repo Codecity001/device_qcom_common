@@ -39,6 +39,10 @@ on early-boot
     write /sys/devices/virtual/npu/msm_npu/boot 1
     write /sys/devices/virtual/cvp/cvp/boot 1
 
+on boot
+    chown system system /sys/class/backlight/soc:backlight/brightness
+    chown system system /sys/class/backlight/soc:backlight/max_brightness
+
 on property:vendor.netflix.bsp_rev=*
     setprop ro.netflix.bsp_rev ${vendor.netflix.bsp_rev}
 
@@ -72,9 +76,11 @@ service vendor.audio-hal /vendor/bin/hw/android.hardware.audio.service
     user audioserver
     # media gid needed for /dev/fm (radio) and for /data/misc/media (tee)
     group audio camera drmrpc inet media mediadrm net_bt net_bt_admin net_bw_acct oem_2901 wakelock
-    capabilities BLOCK_SUSPEND
+    capabilities BLOCK_SUSPEND SYS_NICE
+    # setting RLIMIT_RTPRIO allows binder RT priority inheritance
+    rlimit rtprio 10 10
     ioprio rt 4
-    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks
+    task_profiles ProcessCapacityHigh HighPerformance
     onrestart restart audioserver
 
 service vendor.qrtr-ns /vendor/bin/qrtr-ns -f
